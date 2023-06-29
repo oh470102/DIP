@@ -14,11 +14,11 @@ plt.ion()
 class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
-        self.epochs = int(input("enter epochs: "))
+        self.epochs = 900#int(input("enter epochs: "))
         self.alpha_actor = 1e-4
         self.alpha_critic = 1e-3
         self.gamma = 0.99
-        self.tau = 1e-2
+        self.tau = 5e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Actor(4, hidden_size, output_size).to(self.device)
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
@@ -31,7 +31,7 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=5000, batch_size=128)
+        self.replay_buffer = ExperienceReplay(max_length=100000, batch_size=64)
 
         self.best_models = dict()
 
@@ -70,18 +70,17 @@ class DDPGAgent:
             j = 0
 
             if i %(self.epochs//30) == 0 or i == self.epochs-1:
-                plt.clf
-                plt.plot(scores)
-                plt.draw()
-                plt.pause(0.001)
+                print(sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]))
+                # plt.clf
+                # plt.plot(scores)
+                # plt.draw()
+                # plt.pause(0.001)
 
             while not truncated and not terminated:
                 curr_state = torch.from_numpy(curr_state).to(self.device)
                 action = self.actor(curr_state)
                 action = noise.process_action(action, j)
                 next_state, reward, truncated, terminated, _ = env.step(action)
-                if truncated or terminated: 
-                    reward = -10
                 
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
 
@@ -129,13 +128,13 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 100, 1).to(self.device)
+        best_model_copy = Actor(4, 128, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
 
-ddpg_agent = DDPGAgent(hidden_size=100, output_size=1)
+ddpg_agent = DDPGAgent(hidden_size=128, output_size=1)
 scores, best_model = ddpg_agent.train_agent()
 
 plt.ioff()
