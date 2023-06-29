@@ -14,9 +14,9 @@ plt.ion()
 class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
-        self.epochs = 1000 #int(input("enter epochs: "))
-        self.alpha_actor = 9e-5
-        self.alpha_critic = 9e-4
+        self.epochs = int(input("enter epochs: "))
+        self.alpha_actor = 1e-4
+        self.alpha_critic = 1e-3
         self.gamma = 0.99
         self.tau = 1e-2
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,10 +31,12 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=5000, batch_size=64)
+        self.replay_buffer = ExperienceReplay(max_length=5000, batch_size=128)
+
+        self.best_models = dict()
 
     # Simulation with learned policy (includes graphic)
-    def test_agent(self):
+    def test_agent(self, model):
         env = dpend.DoublePendEnv(render_mode='human', reward_mode=0)
         n_episodes = 1
 
@@ -46,7 +48,7 @@ class DDPGAgent:
 
             while not terminated and not truncated:
                 curr_state = torch.from_numpy(curr_state).to(self.device)
-                action = self.actor(curr_state)
+                action = model(curr_state)
                 next_state, reward, truncated, terminated, _ = env.step(action)
                 
                 curr_state = next_state
@@ -67,11 +69,20 @@ class DDPGAgent:
             terminated = False
             j = 0
 
+            if i %(self.epochs//30) == 0 or i == self.epochs-1:
+                plt.clf
+                plt.plot(scores)
+                plt.draw()
+                plt.pause(0.001)
+
             while not truncated and not terminated:
                 curr_state = torch.from_numpy(curr_state).to(self.device)
                 action = self.actor(curr_state)
                 action = noise.process_action(action, j)
                 next_state, reward, truncated, terminated, _ = env.step(action)
+                if truncated or terminated: 
+                    reward = -10
+                
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
 
                 if len(self.replay_buffer) > self.replay_buffer.batch_size:
@@ -109,19 +120,26 @@ class DDPGAgent:
 
                 curr_state = next_state
                 j += 1
-                if truncated or terminated: scores.append(j); break
 
-                plt.plot(scores)
-                plt.draw()
+                if truncated or terminated: 
+                    if j > max(scores): 
+                        self.best_models[j] = copy.deepcopy(self.actor).state_dict()
+                    scores.append(j)
+                    break
 
-        return scores
+        best_score = max(self.best_models.keys())
+        best_model_params = self.best_models[best_score]
+        best_model_copy = Actor(4, 100, 1).to(self.device)
+        best_model_copy.load_state_dict(best_model_params)
+
+        return scores, best_model_copy
 
 
-ddpg_agent = DDPGAgent(hidden_size=128, output_size=1)
-scores = ddpg_agent.train_agent()
+ddpg_agent = DDPGAgent(hidden_size=100, output_size=1)
+scores, best_model = ddpg_agent.train_agent()
 
 plt.ioff()
 plt.show()
 
-ddpg_agent.test_agent()
+ddpg_agent.test_agent(best_model)
 print(scores)
