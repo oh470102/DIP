@@ -114,6 +114,10 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
     def step(self, action):
         err_msg = "invalid action detected. Please set action value between {0} and {1}".format(-self.torque_mag, self.torque_mag)
+
+        import torch
+        if isinstance(action, torch.Tensor): action = action.item()
+
         assert -self.torque_mag <= action and action <= self.torque_mag, err_msg
         assert self.state is not None, "Call reset before using step method."
         theta1, theta1_dot, theta2, theta2_dot = self.state

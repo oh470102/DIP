@@ -9,13 +9,14 @@ import matplotlib.pyplot as plt
 
 ### resolve matplotlib error
 resolve_matplotlib_error()
+plt.ion()
 
 class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
-        self.epochs = int(input("enter epochs: "))
-        self.alpha_actor = 1e-4
-        self.alpha_critic = 1e-3
+        self.epochs = 1000 #int(input("enter epochs: "))
+        self.alpha_actor = 9e-5
+        self.alpha_critic = 9e-4
         self.gamma = 0.99
         self.tau = 1e-2
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,23 +31,25 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=5000, batch_size=128)
+        self.replay_buffer = ExperienceReplay(max_length=5000, batch_size=64)
 
     # Simulation with learned policy (includes graphic)
     def test_agent(self):
         env = dpend.DoublePendEnv(render_mode='human', reward_mode=0)
         n_episodes = 1
+
         for _ in range(n_episodes):
-            state, _ = env.reset()
+            curr_state, _ = env.reset()
 
             terminated = False
             truncated = False
 
             while not terminated and not truncated:
-                state = torch.tensor(state, dtype=torch.float32).to(self.device)
+                curr_state = torch.from_numpy(curr_state).to(self.device)
+                action = self.actor(curr_state)
+                next_state, reward, truncated, terminated, _ = env.step(action)
                 
-                action = self.actor(torch.FloatTensor(state))
-                state, reward, terminated, truncated, info = env.step(action)
+                curr_state = next_state
                 
         env.close()  
 
@@ -54,10 +57,9 @@ class DDPGAgent:
     def train_agent(self):
         env = dpend.DoublePendEnv(reward_mode=0)
         noise = OUNoise(env.action_space)
-        scores = []
+        scores = [0]
 
         for i in tqdm(range(self.epochs)):
-            print(f"currently on epoch {i}/{self.epochs}")  
 
             curr_state, _ = env.reset()
             noise.reset()
@@ -109,13 +111,16 @@ class DDPGAgent:
                 j += 1
                 if truncated or terminated: scores.append(j); break
 
+                plt.plot(scores)
+                plt.draw()
+
         return scores
 
 
 ddpg_agent = DDPGAgent(hidden_size=128, output_size=1)
 scores = ddpg_agent.train_agent()
 
-plt.plot(scores)
+plt.ioff()
 plt.show()
 
 ddpg_agent.test_agent()
