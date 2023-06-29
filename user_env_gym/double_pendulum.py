@@ -81,6 +81,9 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.fric_coef1 = 0.05
         self.fric_coef2 = 0.05
 
+        self.theta1_threshold_radian = 0.5
+        self.theta2_threshold_radian = 0.6
+
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds.
         high = np.array(
@@ -148,47 +151,47 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         self.state = (sol[1][0], sol[1][1], sol[1][2], sol[1][3])
 
-        # terminated = bool(
-        #     x < -self.x_threshold
-        #     or x > self.x_threshold
-        #     or theta < -self.theta_threshold_radians
-        #     or theta > self.theta_threshold_radians
-        # )
+        terminated = bool(
+            theta1 < np.pi - self.theta1_threshold_radian
+            or theta1 > np.pi + self.theta1_threshold_radian
+            or theta2 < np.pi - self.theta2_threshold_radian
+            or theta2 > np.pi + self.theta2_threshold_radian
+        )
 
-        # if terminated:
-        #     self.states.append(self.state)
+        #if terminated:
+        #   self.states.append(self.state)
 
-        # if not terminated:
-        #     reward = 0.0
-        #     if self.reward_mode == 0:
-        #         reward = 1.0
-        #     if self.reward_mode == 1:
-        #         if self.state[0] <= 1 and self.state[0] >= -1:
-        #             reward = 2.0
-        #         else:
-        #             reward = 1.0
-        #     if self.reward_mode == 2:
-        #         norm_dist_x = scipy.stats.norm(loc = 0, scale = 0.5)
-        #         norm_dist_theta = scipy.stats.norm(loc = 0, scale = 0.1)
-        #         reward = 0.5 * math.sqrt(2 * 3.14) * norm_dist_x.pdf(self.state[0]) + 0.1 * math.sqrt(2 * 3.14) * norm_dist_theta.pdf(self.state[2])
-        # elif self.steps_beyond_terminated is None:
-        #     # Pole just fell!
-        #     self.steps_beyond_terminated = 0
-        #     reward = 1.0
-        # else:
-        #     if self.steps_beyond_terminated == 0:
-        #         logger.warn(
-        #             "You are calling 'step()' even though this "
-        #             "environment has already returned terminated = True. You "
-        #             "should always call 'reset()' once you receive 'terminated = "
-        #             "True' -- any further steps are undefined behavior."
-        #         )
-        #     self.steps_beyond_terminated += 1
-        #     reward = 0.0
+        if not terminated:
+            reward = 0.0
+            if self.reward_mode == 0:
+                reward = 1.0
+            if self.reward_mode == 1:
+                if self.state[0] <= 1 and self.state[0] >= -1:
+                    reward = 2.0
+                else:
+                    reward = 1.0
+            if self.reward_mode == 2:
+                norm_dist_x = scipy.stats.norm(loc = 0, scale = 0.5)
+                norm_dist_theta = scipy.stats.norm(loc = 0, scale = 0.1)
+                reward = 0.5 * math.sqrt(2 * 3.14) * norm_dist_x.pdf(self.state[0]) + 0.1 * math.sqrt(2 * 3.14) * norm_dist_theta.pdf(self.state[2])
+        elif self.steps_beyond_terminated is None:
+            # Pole just fell!
+            self.steps_beyond_terminated = 0
+            reward = 1.0
+        else:
+            if self.steps_beyond_terminated == 0:
+                logger.warn(
+                    "You are calling 'step()' even though this "
+                    "environment has already returned terminated = True. You "
+                    "should always call 'reset()' once you receive 'terminated = "
+                    "True' -- any further steps are undefined behavior."
+                )
+            self.steps_beyond_terminated += 1
+            reward = 0.0
 
         if self.render_mode == "human":
             self.render()
-        return np.array(self.state, dtype=np.float32)#, reward, terminated, False, {}
+        return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
 
     def reset(
         self,
