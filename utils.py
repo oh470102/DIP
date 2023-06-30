@@ -11,7 +11,7 @@ def resolve_matplotlib_error():
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 def test_env():
-    env = dpend.DoublePendEnv(render_mode="human", reward_mode=2)
+    env = dpend.DoublePendEnv(render_mode="human", reward_mode=1)
 
     n_episodes = 1
     for episode in range(n_episodes):

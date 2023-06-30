@@ -62,7 +62,7 @@ class DDPGAgent:
 
     # Training the agent to learn the policy    
     def train_agent(self):
-        env = dpend.DoublePendEnv(reward_mode=0)
+        env = dpend.DoublePendEnv(reward_mode=1)
         noise = OUNoise(env.action_space)
         scores = [40] # default score
 
@@ -85,9 +85,14 @@ class DDPGAgent:
                 plt.pause(0.001)
 
             while not truncated and not terminated:
-                curr_state = torch.from_numpy(curr_state).to(self.device)
-                action = self.actor(curr_state)
-                action = noise.process_action(action, j)
+
+                self.actor.eval()
+                with torch.no_grad():
+                    curr_state = torch.from_numpy(curr_state).to(self.device)
+                    action = self.actor(curr_state)
+                    action = noise.process_action(action, j)
+                self.actor.train()
+                
                 next_state, reward, truncated, terminated, info = env.step(action)
                 
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
@@ -141,6 +146,7 @@ class DDPGAgent:
 
         return scores, best_model_copy
 
+#test_env()
 ddpg_agent = DDPGAgent(hidden_size=64, output_size=1)
 scores, best_model = ddpg_agent.train_agent()
 

@@ -158,8 +158,8 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         terminated = bool(
             theta1 < np.pi - self.theta1_threshold_radian
             or theta1 > np.pi + self.theta1_threshold_radian 
-            or theta2 < np.pi - self.theta2_threshold_radian - theta1
-            or theta2 > np.pi + self.theta2_threshold_radian - theta1
+            or theta2 < np.pi - self.theta2_threshold_radian 
+            or theta2 > np.pi + self.theta2_threshold_radian 
         )
 
         #if terminated:
@@ -171,7 +171,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
                 reward = 1
             if self.reward_mode == 1:
                 if self.state[0] <= 0.3 and self.state[0] >= -0.3:
-                    reward = 1.0
+                    reward = 2.0
                 else:
                     reward = 1.0
                 
