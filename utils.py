@@ -3,6 +3,7 @@ import torch
 import random
 from collections import deque
 import numpy as np
+import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -29,8 +30,17 @@ def test_env():
             
     env.close() 
 
+def live_plot(scores):
+    plt.clf
+    plt.plot(scores)
+    plt.xlabel('epochs')
+    plt.ylabel('scores')
+    plt.draw()
+    plt.pause(0.001)
+
+
 class OUNoise:
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.2, decay_period=1e6):
+    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.2, min_sigma=0.2, decay_period=1e6):
         self.mu = mu
         self.theta = theta
         self.sigma = max_sigma

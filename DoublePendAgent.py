@@ -15,9 +15,9 @@ class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
         self.epochs = int(input("enter epochs: "))
-        self.alpha_actor = 1e-4
-        self.alpha_critic = 1e-3
-        self.gamma = 0.99
+        self.alpha_actor = 2e-4
+        self.alpha_critic = 2e-3
+        self.gamma = 0.95
         self.tau = 1e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Actor(4, hidden_size, output_size).to(self.device)
@@ -31,8 +31,8 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=50000, batch_size=64)
-        self.learning_starts = 100 * self.replay_buffer.batch_size
+        self.replay_buffer = ExperienceReplay(max_length=20000, batch_size=64)
+        self.learning_starts = 4000
 
         self.best_models = dict()
 
@@ -63,7 +63,7 @@ class DDPGAgent:
 
     # Training the agent to learn the policy    
     def train_agent(self):
-        env = dpend.DoublePendEnv(reward_mode=0)
+        env = dpend.DoublePendEnv(reward_mode=1)
         noise = OUNoise(env.action_space)
         scores = [40] # default score
 
@@ -77,13 +77,7 @@ class DDPGAgent:
 
             if i >= self.epochs//30 and i %(self.epochs//30) == 0 or i == self.epochs-1:
                 print(f"average of last {self.epochs//30} scores: {sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]): .2f}")
-                print()
-                print(len(self.replay_buffer))
-
-                plt.clf
-                plt.plot(scores)
-                plt.draw()
-                plt.pause(0.001)
+                live_plot(scores)
 
             while not truncated and not terminated:
 
@@ -115,7 +109,7 @@ class DDPGAgent:
                     actor_loss = -self.critic.forward(state_batch, self.actor.forward(state_batch)).mean()
 
                     # update networks
-                    # NOTE: 반드시 actor를 먼저 update 
+                    # NOTE: need to update actor first.
                     self.actor_optimizer.zero_grad()
                     actor_loss.backward()
                     self.actor_optimizer.step()
@@ -142,16 +136,16 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 256, 1).to(self.device)
+        best_model_copy = Actor(4, 64, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
-test_env()
-# ddpg_agent = DDPGAgent(hidden_size=256, output_size=1)
-# scores, best_model = ddpg_agent.train_agent()
 
-# plt.ioff()
-# plt.show()
+ddpg_agent = DDPGAgent(hidden_size=64, output_size=1)
+scores, best_model = ddpg_agent.train_agent()
 
-# ddpg_agent.test_agent(best_model)
+plt.ioff()
+plt.show()
+
+ddpg_agent.test_agent(best_model)

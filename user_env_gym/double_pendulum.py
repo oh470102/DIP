@@ -188,7 +188,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         elif self.steps_beyond_terminated is None:
             # Pole just fell!
             self.steps_beyond_terminated = 0
-            reward = -5
+            reward = -1
         else:
             if self.steps_beyond_terminated == 0:
                 logger.warn(
