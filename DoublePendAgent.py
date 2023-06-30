@@ -50,6 +50,7 @@ class DDPGAgent:
             score = 0 
 
             while not terminated and not truncated:
+                self.actor.eval()
                 curr_state = torch.from_numpy(curr_state).unsqueeze(0).to(self.device)
                 action = model(curr_state)
                 next_state, reward, truncated, terminated, _ = env.step(action)
@@ -141,13 +142,13 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 128, 1).to(self.device)
+        best_model_copy = Actor(4, 256, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
 #test_env()
-ddpg_agent = DDPGAgent(hidden_size=128, output_size=1)
+ddpg_agent = DDPGAgent(hidden_size=256, output_size=1)
 scores, best_model = ddpg_agent.train_agent()
 
 plt.ioff()
