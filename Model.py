@@ -12,18 +12,13 @@ class Critic(nn.Module):
         self.bn1 = nn.BatchNorm1d(hidden_size)
         self.l2 = nn.Linear(hidden_size, hidden_size)
         self.bn2 = nn.BatchNorm1d(hidden_size)
-        self.l3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.l4 = nn.Linear(hidden_size, output_size)
-        
-        self.layernorm = nn.LayerNorm(hidden_size)
+        self.l3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, state, action):
         x = torch.cat([F.relu(state), action], 1)
         x = F.relu(self.bn1(self.l1(x)))
         x = F.relu(self.bn2(self.l2(x)))
-        x = F.relu(self.bn3(self.l3(x)))
-        out = self.l4(x)
+        out = self.l3(x)
 
         return out.to(device)
 
@@ -34,15 +29,12 @@ class Actor(nn.Module):
         self.bn1 = nn.BatchNorm1d(hidden_size)
         self.l2 = nn.Linear(hidden_size, hidden_size)
         self.bn2 = nn.BatchNorm1d(hidden_size)
-        self.l3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.l4 = nn.Linear(hidden_size, output_size)
+        self.l3 = nn.Linear(hidden_size, output_size)
         self.tanh = nn.Tanh()
 
     def forward(self, state):
         x = F.relu(self.bn1(self.l1(state)))
         x = F.relu(self.bn2(self.l2(x)))
-        x = F.relu(self.bn3(self.l3(x)))
-        out = 20 * self.tanh(self.l4(x))
+        out = 20 * self.tanh(self.l3(x))
 
         return out.to(device)
