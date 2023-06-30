@@ -170,10 +170,14 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             if self.reward_mode == 0:
                 reward = 1
             if self.reward_mode == 1:
-                if self.state[0] <= 1 and self.state[0] >= -1:
-                    reward = 2.0
+                if self.state[0] <= 0.3 and self.state[0] >= -0.3:
+                    reward = 1.0
                 else:
                     reward = 1.0
+                
+                if self.state[1] > 10 or self.state[3] > 10:
+                    reward -= 1.0
+
             if self.reward_mode == 2:
                 norm_dist_x = scipy.stats.norm(loc = 0, scale = 0.5)
                 norm_dist_theta = scipy.stats.norm(loc = 0, scale = 0.1)
@@ -182,7 +186,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         elif self.steps_beyond_terminated is None:
             # Pole just fell!
             self.steps_beyond_terminated = 0
-            reward = -10
+            reward = -5
         else:
             if self.steps_beyond_terminated == 0:
                 logger.warn(
