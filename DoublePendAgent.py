@@ -14,11 +14,11 @@ plt.ion()
 class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
-        self.epochs = 900#int(input("enter epochs: "))
+        self.epochs = int(input("enter epochs: "))
         self.alpha_actor = 1e-4
         self.alpha_critic = 1e-3
         self.gamma = 0.99
-        self.tau = 5e-3
+        self.tau = 1e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Actor(4, hidden_size, output_size).to(self.device)
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
@@ -31,7 +31,8 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=100000, batch_size=64)
+        self.replay_buffer = ExperienceReplay(max_length=50000, batch_size=64)
+        self.learning_starts = 100 * self.replay_buffer.batch_size
 
         self.best_models = dict()
 
@@ -46,20 +47,24 @@ class DDPGAgent:
             terminated = False
             truncated = False
 
+            score = 0 
+
             while not terminated and not truncated:
                 curr_state = torch.from_numpy(curr_state).to(self.device)
                 action = model(curr_state)
                 next_state, reward, truncated, terminated, _ = env.step(action)
+                score += reward
                 
                 curr_state = next_state
                 
+        print(f"MODEL SCORE:{score}")
         env.close()  
 
     # Training the agent to learn the policy    
     def train_agent(self):
         env = dpend.DoublePendEnv(reward_mode=0)
         noise = OUNoise(env.action_space)
-        scores = [0]
+        scores = [40] # default score
 
         for i in tqdm(range(self.epochs)):
 
@@ -69,22 +74,25 @@ class DDPGAgent:
             terminated = False
             j = 0
 
-            if i %(self.epochs//30) == 0 or i == self.epochs-1:
-                print(sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]))
-                # plt.clf
-                # plt.plot(scores)
-                # plt.draw()
-                # plt.pause(0.001)
+            if i >= self.epochs//30 and i %(self.epochs//30) == 0 or i == self.epochs-1:
+                print(f"average of last {self.epochs//30} scores: {sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]): .2f}")
+                print()
+                print(len(self.replay_buffer))
+
+                plt.clf
+                plt.plot(scores)
+                plt.draw()
+                plt.pause(0.001)
 
             while not truncated and not terminated:
                 curr_state = torch.from_numpy(curr_state).to(self.device)
                 action = self.actor(curr_state)
                 action = noise.process_action(action, j)
-                next_state, reward, truncated, terminated, _ = env.step(action)
+                next_state, reward, truncated, terminated, info = env.step(action)
                 
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
 
-                if len(self.replay_buffer) > self.replay_buffer.batch_size:
+                if len(self.replay_buffer) > self.learning_starts:
                     state_batch, action_batch, reward_batch, state2_batch, done_batch = self.replay_buffer.sample()
 
                     # Calculate Critic Loss 
@@ -128,17 +136,15 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 128, 1).to(self.device)
+        best_model_copy = Actor(4, 64, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
-
-ddpg_agent = DDPGAgent(hidden_size=128, output_size=1)
+ddpg_agent = DDPGAgent(hidden_size=64, output_size=1)
 scores, best_model = ddpg_agent.train_agent()
 
 plt.ioff()
 plt.show()
 
 ddpg_agent.test_agent(best_model)
-print(scores)

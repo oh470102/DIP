@@ -11,7 +11,7 @@ def resolve_matplotlib_error():
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 def test_env():
-    env = dpend.DoublePendEnv(render_mode="human")
+    env = dpend.DoublePendEnv(render_mode="human", reward_mode=2)
 
     n_episodes = 1
     for episode in range(n_episodes):
@@ -24,15 +24,16 @@ def test_env():
         while not terminated and not truncated:
             state = torch.tensor(state, dtype=torch.float32)
             state, reward, terminated, truncated, _ = env.step(action)
+            print(reward)
             
             
     env.close() 
 
 class OUNoise:
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.3, decay_period=1e6):
+    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.2, decay_period=1e6):
         self.mu = mu
         self.theta = theta
-        self.sigma = max
+        self.sigma = max_sigma
         self.max_sigma = max_sigma
         self.min_sigma = min_sigma
         self.decay_period = decay_period

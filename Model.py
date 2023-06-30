@@ -14,10 +14,12 @@ class Critic(nn.Module):
         self.l4 = nn.Linear(hidden_size, output_size)
         
         self.layernorm = nn.LayerNorm(hidden_size)
+        self.leakyrelu = nn.LeakyReLU()
 
     def forward(self, state, action):
-        x = torch.cat([F.relu(state), action], 1)
-        x = self.layernorm(self.l2(F.relu(self.l1(x))))
+        x = torch.cat([self.leakyrelu(state), action], 1)
+        x = self.l1(x)
+        x = self.layernorm(self.l2(x))
         x = self.layernorm(self.l3(x))
         out = self.l4(x)
 
@@ -31,13 +33,14 @@ class Actor(nn.Module):
         self.l3 = nn.Linear(hidden_size, hidden_size)
         self.l4 = nn.Linear(hidden_size, output_size)
         self.tanh = nn.Tanh()
+        self.leakyrelu = nn.LeakyReLU()
         
         self.layernorm = nn.LayerNorm(hidden_size)
 
     def forward(self, state):
-        x = F.relu(self.l1(state))
+        x = self.leakyrelu(self.l1(state))
         x = self.layernorm(self.l2(x))
-        x = self.layernorm(F.relu(self.l3(x)))
+        x = self.layernorm(self.l3(x))
         out = 20 * self.tanh(self.l4(x))
 
         return out.to(device)
