@@ -81,7 +81,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.fric_coef1 = 0.05
         self.fric_coef2 = 0.05
 
-        self.theta1_threshold_radian = 0.4
+        self.theta1_threshold_radian = 1.0
         self.theta2_threshold_radian = 0.6
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
@@ -157,9 +157,9 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         terminated = bool(
             theta1 < np.pi - self.theta1_threshold_radian
-            or theta1 > np.pi + self.theta1_threshold_radian
-            or theta2 < np.pi - self.theta2_threshold_radian
-            or theta2 > np.pi + self.theta2_threshold_radian
+            or theta1 > np.pi + self.theta1_threshold_radian 
+            or theta2 < np.pi - self.theta2_threshold_radian - theta1
+            or theta2 > np.pi + self.theta2_threshold_radian - theta1
         )
 
         #if terminated:
