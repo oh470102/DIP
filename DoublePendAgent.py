@@ -147,11 +147,11 @@ class DDPGAgent:
 
         return scores, best_model_copy
 
-#test_env()
-ddpg_agent = DDPGAgent(hidden_size=256, output_size=1)
-scores, best_model = ddpg_agent.train_agent()
+test_env()
+# ddpg_agent = DDPGAgent(hidden_size=256, output_size=1)
+# scores, best_model = ddpg_agent.train_agent()
 
-plt.ioff()
-plt.show()
+# plt.ioff()
+# plt.show()
 
-ddpg_agent.test_agent(best_model)
+# ddpg_agent.test_agent(best_model)

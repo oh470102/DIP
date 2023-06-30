@@ -170,10 +170,12 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             if self.reward_mode == 0:
                 reward = 1
             if self.reward_mode == 1:
-                if self.state[0] <= 0.3 and self.state[0] >= -0.3:
-                    reward = 2.0
-                else:
-                    reward = 1.0
+                norm_dist_th1 = scipy.stats.norm(loc = 0, scale = 0.3)
+                reward = 0.3 * math.sqrt(2 * np.pi) * norm_dist_th1.pdf(np.pi - self.state[0]) - 0.5
+                # if np.pi - self.state[0] <= 0.3 and self.state[0] <= np.pi + 0.3:
+                #     reward = 2.0
+                # else:
+                #     reward = 1.0
                 
                 if self.state[1] > 10 or self.state[3] > 10:
                     reward -= 1.0
