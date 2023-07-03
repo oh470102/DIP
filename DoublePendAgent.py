@@ -6,6 +6,7 @@ from Model import *
 import torch
 import copy
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 ### resolve matplotlib error
 resolve_matplotlib_error()
@@ -15,9 +16,9 @@ class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
         self.epochs = int(input("enter epochs: "))
-        self.alpha_actor = 2e-4
-        self.alpha_critic = 2e-3
-        self.gamma = 0.95
+        self.alpha_actor = 1e-4
+        self.alpha_critic = 1e-3
+        self.gamma = 0.99
         self.tau = 1e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Actor(4, hidden_size, output_size).to(self.device)
@@ -28,18 +29,18 @@ class DDPGAgent:
         self.critic = Critic(5, hidden_size, output_size).to(self.device)
         self.critic_target = copy.deepcopy(self.critic).to(self.device)
         self.critic_target.load_state_dict(self.critic_target.state_dict())
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic, weight_decay=0.2)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=20000, batch_size=64)
-        self.learning_starts = 4000
+        self.replay_buffer = ExperienceReplay(max_length=100000, batch_size=64)
+        self.learning_starts = 150
 
         self.best_models = dict()
 
     # Simulation with learned policy (includes graphic)
     def test_agent(self, model):
-        env = dpend.DoublePendEnv(render_mode='human', reward_mode=0)
-        n_episodes = 1
+        env = dpend.DoublePendEnv(render_mode='human', reward_mode=3)
+        n_episodes = 5
 
         for _ in range(n_episodes):
             curr_state, _ = env.reset()
@@ -52,8 +53,11 @@ class DDPGAgent:
             while not terminated and not truncated:
                 self.actor.eval()
                 curr_state = torch.from_numpy(curr_state).unsqueeze(0).to(self.device)
-                action = model(curr_state)
+                action = model(curr_state).cpu().detach()
                 next_state, reward, truncated, terminated, _ = env.step(action)
+
+                print(reward)
+
                 score += reward
                 
                 curr_state = next_state
@@ -63,7 +67,7 @@ class DDPGAgent:
 
     # Training the agent to learn the policy    
     def train_agent(self):
-        env = dpend.DoublePendEnv(reward_mode=1)
+        env = dpend.DoublePendEnv(reward_mode=3)
         noise = OUNoise(env.action_space)
         scores = [40] # default score
 
@@ -88,11 +92,11 @@ class DDPGAgent:
                     action = noise.process_action(action, j)
                 self.actor.train()
 
-                next_state, reward, truncated, terminated, info = env.step(action)
+                next_state, reward, truncated, terminated, info = env.step(action.cpu())
                 
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
 
-                if len(self.replay_buffer) > self.learning_starts:
+                if i > self.learning_starts:
                     state_batch, action_batch, reward_batch, state2_batch, done_batch = self.replay_buffer.sample()
 
                     # Calculate Critic Loss 
@@ -136,16 +140,23 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 64, 1).to(self.device)
+        best_model_copy = Actor(4, 32, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
 
-ddpg_agent = DDPGAgent(hidden_size=64, output_size=1)
+ddpg_agent = DDPGAgent(hidden_size=32, output_size=1)
+
 scores, best_model = ddpg_agent.train_agent()
 
 plt.ioff()
 plt.show()
 
+file_path = datetime.now().strftime("%-I:%M") +".pth"
+torch.save(best_model.state_dict(), file_path)
+
 ddpg_agent.test_agent(best_model)
+
+# ddpg_agent.actor.load_state_dict(torch.load("2:51.pth"))
+# ddpg_agent.test_agent(model=ddpg_agent.actor)

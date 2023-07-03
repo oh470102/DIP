@@ -182,7 +182,10 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             if self.reward_mode == 3:
                 reward = -((np.pi - self.state[0])**2) - 0.1 * (np.pi - self.state[2])**2 - 0.001 * torque**2
                 if self.prev_state != None:
-                    reward -= 0.1 * ((self.state[0] - self.prev_state[0]) / self.tau)**2 + 0.01 * ((self.state[2] - self.prev_state[2]) / self.tau)**2
+                    reward -= 0.5 * ((self.state[0] - self.prev_state[0]) / self.tau)**2 + 0.05 * ((self.state[2] - self.prev_state[2]) / self.tau)**2
+
+                if isinstance(reward, float) is False: reward = reward.squeeze()
+
 
 
         # elif self.steps_beyond_terminated is None:
@@ -204,7 +207,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         if self.render_mode == "human":
             self.render()
-        return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
+        return np.array(self.state, dtype=np.float32), reward + 0.2, terminated, False, {}
 
     def reset(
         self,
