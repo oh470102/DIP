@@ -5,44 +5,44 @@ import torch.nn.functional as F
 torch.autograd.set_detect_anomaly(True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class Critic(nn.Module):
+# hidden size = 64
+
+class Critic(torch.nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(Critic, self).__init__()
+        super().__init__()
         self.l1 = nn.Linear(input_size, hidden_size)
-        self.bn1 = nn.BatchNorm1d(hidden_size)
-        self.l2 = nn.Linear(hidden_size, hidden_size)
-        self.bn2 = nn.BatchNorm1d(hidden_size)
-        self.l3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.l4 = nn.Linear(hidden_size, output_size)
+        self.l2 = nn.Linear(hidden_size, hidden_size//2)
+        self.l3 = nn.Linear(hidden_size//2, hidden_size//2)
+        self.l4 = nn.Linear(hidden_size//2, hidden_size//4)
+        self.l5 = nn.Linear(hidden_size//4, output_size)
         
-        self.layernorm = nn.LayerNorm(hidden_size)
+        self.lrelu = nn.LeakyReLU()
 
     def forward(self, state, action):
-        x = torch.cat([F.relu(state), action], 1)
-        x = F.relu(self.bn1(self.l1(x)))
-        x = F.relu(self.bn2(self.l2(x)))
-        x = F.relu(self.bn3(self.l3(x)))
-        out = self.l4(x)
+        x = torch.cat([state, action], 1)
+        x = self.lrelu(self.l1(x))
+        x = self.lrelu(self.l2(x))
+        x = self.lrelu(self.l3(x))
+        x = self.lrelu(self.l4(x))
+        out = self.l5(x)
 
         return out.to(device)
 
-class Actor(nn.Module):
+class Actor(torch.nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(Actor, self).__init__()
+        super().__init__()
         self.l1 = nn.Linear(input_size, hidden_size)
-        self.bn1 = nn.BatchNorm1d(hidden_size)
-        self.l2 = nn.Linear(hidden_size, hidden_size)
-        self.bn2 = nn.BatchNorm1d(hidden_size)
-        self.l3 = nn.Linear(hidden_size, hidden_size)
-        self.bn3 = nn.BatchNorm1d(hidden_size)
-        self.l4 = nn.Linear(hidden_size, output_size)
+        self.l2 = nn.Linear(hidden_size, hidden_size//2)
+        self.l3 = nn.Linear(hidden_size//2, hidden_size//4)
+        self.l4 = nn.Linear(hidden_size//4, output_size)
         self.tanh = nn.Tanh()
-
+        self.lrelu = nn.LeakyReLU()
+        
     def forward(self, state):
-        x = F.relu(self.bn1(self.l1(state)))
-        x = F.relu(self.bn2(self.l2(x)))
-        x = F.relu(self.bn3(self.l3(x)))
+        x = self.lrelu(self.l1(state))
+        x = self.lrelu(self.l2(x))
+        x = self.lrelu(self.l3(x))
         out = 20 * self.tanh(self.l4(x))
 
         return out.to(device)
+

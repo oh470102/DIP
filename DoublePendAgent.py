@@ -15,9 +15,9 @@ class DDPGAgent:
     
     def __init__(self, hidden_size, output_size):
         self.epochs = int(input("enter epochs: "))
-        self.alpha_actor = 1e-4
-        self.alpha_critic = 1e-3
-        self.gamma = 0.99
+        self.alpha_actor = 2e-4
+        self.alpha_critic = 2e-3
+        self.gamma = 0.95
         self.tau = 1e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Actor(4, hidden_size, output_size).to(self.device)
@@ -31,8 +31,8 @@ class DDPGAgent:
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic)
         self.critic_loss_fn = torch.nn.MSELoss()
 
-        self.replay_buffer = ExperienceReplay(max_length=50000, batch_size=64)
-        self.learning_starts = 100 * self.replay_buffer.batch_size
+        self.replay_buffer = ExperienceReplay(max_length=20000, batch_size=64)
+        self.learning_starts = 4000
 
         self.best_models = dict()
 
@@ -50,7 +50,8 @@ class DDPGAgent:
             score = 0 
 
             while not terminated and not truncated:
-                curr_state = torch.from_numpy(curr_state).to(self.device)
+                self.actor.eval()
+                curr_state = torch.from_numpy(curr_state).unsqueeze(0).to(self.device)
                 action = model(curr_state)
                 next_state, reward, truncated, terminated, _ = env.step(action)
                 score += reward
@@ -76,23 +77,17 @@ class DDPGAgent:
 
             if i >= self.epochs//30 and i %(self.epochs//30) == 0 or i == self.epochs-1:
                 print(f"average of last {self.epochs//30} scores: {sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]): .2f}")
-                print()
-                print(len(self.replay_buffer))
-
-                plt.clf
-                plt.plot(scores)
-                plt.draw()
-                plt.pause(0.001)
+                live_plot(scores)
 
             while not truncated and not terminated:
 
                 self.actor.eval()
                 with torch.no_grad():
-                    curr_state = torch.from_numpy(curr_state).to(self.device)
+                    curr_state = torch.from_numpy(curr_state).unsqueeze(0).to(self.device)
                     action = self.actor(curr_state)
                     action = noise.process_action(action, j)
                 self.actor.train()
-                
+
                 next_state, reward, truncated, terminated, info = env.step(action)
                 
                 self.replay_buffer.append(curr_state, action, reward, torch.from_numpy(next_state), truncated or terminated)
@@ -114,7 +109,7 @@ class DDPGAgent:
                     actor_loss = -self.critic.forward(state_batch, self.actor.forward(state_batch)).mean()
 
                     # update networks
-                    # NOTE: 반드시 actor를 먼저 update 
+                    # NOTE: need to update actor first.
                     self.actor_optimizer.zero_grad()
                     actor_loss.backward()
                     self.actor_optimizer.step()
@@ -146,7 +141,7 @@ class DDPGAgent:
 
         return scores, best_model_copy
 
-#test_env()
+
 ddpg_agent = DDPGAgent(hidden_size=64, output_size=1)
 scores, best_model = ddpg_agent.train_agent()
 
