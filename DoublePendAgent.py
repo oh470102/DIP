@@ -14,26 +14,26 @@ plt.ion()
 
 class DDPGAgent:
     
-    def __init__(self, hidden_size, output_size):
-        self.epochs = int(input("enter epochs: "))
+    def __init__(self, output_size):
+        self.epochs = 1800#int(input("enter epochs: "))
         self.alpha_actor = 1e-4
         self.alpha_critic = 1e-3
         self.gamma = 0.99
         self.tau = 1e-3
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.actor = Actor(4, hidden_size, output_size).to(self.device)
+        self.actor = Actor(4, output_size).to(self.device)
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
         self.actor_target.load_state_dict(self.actor_target.state_dict())
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.alpha_actor)
         self.actor_loss_fn = None
-        self.critic = Critic(5, hidden_size, output_size).to(self.device)
+        self.critic = Critic(5, output_size).to(self.device)
         self.critic_target = copy.deepcopy(self.critic).to(self.device)
         self.critic_target.load_state_dict(self.critic_target.state_dict())
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.alpha_critic, weight_decay=0.2)
         self.critic_loss_fn = torch.nn.MSELoss()
 
         self.replay_buffer = ExperienceReplay(max_length=100000, batch_size=64)
-        self.learning_starts = 150
+        self.learning_starts = self.epochs//10
 
         self.best_models = dict()
 
@@ -79,8 +79,8 @@ class DDPGAgent:
             terminated = False
             j = 0
 
-            if i >= self.epochs//30 and i %(self.epochs//30) == 0 or i == self.epochs-1:
-                print(f"average of last {self.epochs//30} scores: {sum(scores[-self.epochs//30:])/len(scores[-self.epochs//30:]): .2f}")
+            if i >= self.epochs//50 and i %(self.epochs//50) == 0 or i == self.epochs-1:
+                print(f"average of last {self.epochs//50} scores: {sum(scores[-self.epochs//30:])/len(scores[-self.epochs//50:]): .2f}")
                 live_plot(scores)
 
             while not truncated and not terminated:
@@ -140,13 +140,13 @@ class DDPGAgent:
 
         best_score = max(self.best_models.keys())
         best_model_params = self.best_models[best_score]
-        best_model_copy = Actor(4, 32, 1).to(self.device)
+        best_model_copy = Actor(4, 1).to(self.device)
         best_model_copy.load_state_dict(best_model_params)
 
         return scores, best_model_copy
 
 
-ddpg_agent = DDPGAgent(hidden_size=32, output_size=1)
+ddpg_agent = DDPGAgent(output_size=1)
 
 scores, best_model = ddpg_agent.train_agent()
 

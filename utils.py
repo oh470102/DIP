@@ -40,13 +40,10 @@ def live_plot(scores):
 
 
 class OUNoise:
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.2, decay_period=1e6):
+    def __init__(self, action_space, mu=0.0, theta=0.15, sigma=0.2):
         self.mu = mu
         self.theta = theta
-        self.sigma = max_sigma
-        self.max_sigma = max_sigma
-        self.min_sigma = min_sigma
-        self.decay_period = decay_period
+        self.sigma = sigma
         self.action_dim = action_space.shape[0]
         self.low = action_space.low
         self.high = action_space.high
@@ -64,7 +61,6 @@ class OUNoise:
     
     def process_action(self, action, t=0):
         ou_state = self.evolve_state()
-        self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, t / self.decay_period)
         action_ = action.to('cpu')
         noised_action = action_.detach().numpy() + ou_state
         return torch.tensor(np.clip(noised_action, self.low, self.high)).to(device)
