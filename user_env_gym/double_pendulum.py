@@ -84,6 +84,8 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.theta1_threshold_radian = 1.0
         self.theta2_threshold_radian = 0.6
 
+        self.prev_state = None
+
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds.
         high = np.array(
@@ -114,11 +116,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
     def step(self, action):
         err_msg = "invalid action detected. Please set action value between {0} and {1}".format(-self.torque_mag, self.torque_mag)
-
-        import torch
-        if isinstance(action, torch.Tensor): action = action.item()
-
-        assert -self.torque_mag <= action and action <= self.torque_mag, err_msg
+        # assert -self.torque_mag <= action and action <= self.torque_mag, err_msg
         assert self.state is not None, "Call reset before using step method."
         theta1, theta1_dot, theta2, theta2_dot = self.state
         torque = action
@@ -135,10 +133,10 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             tmp1_3 = (3 * l_1)/(2 * l_2) * th1_dot * sindelth * (th1_dot - th2_dot)
             tmp1 = tmp1_1 + tmp1_2 + tmp1_3 + 3 * b_2 * (th1_dot - th2_dot) / l_2
 
-            tmp2_1 = tau + 0.5 * m_2 * l_1 * l_2 * th1_dot * th2_dot * sindelth
+            tmp2_1 = -tau + 0.5 * m_2 * l_1 * l_2 * th1_dot * th2_dot * sindelth
             tmp2_2 = 0.5 * m_1 * g * l_1 * sinth1 + m_2 * g * l_1 * sinth1
             tmp2_3 = -0.5 * m_2 * l_1 * l_2 * th2_dot * sindelth * (th1_dot - th2_dot)
-            tmp2 = tmp2_1 + tmp2_2 + tmp2_3 - b_1 * th1_dot
+            tmp2 = tmp2_1 + tmp2_2 + tmp2_3 + b_1 * th1_dot
             
             tmp3 = 0.75 * m_2 * l_1**2 * cosdelth**2 - (m_2 + (m_1 / 3)) * l_1**2
 
@@ -161,19 +159,18 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             or theta2 < np.pi - self.theta2_threshold_radian 
             or theta2 > np.pi + self.theta2_threshold_radian 
         )
-
-        #if terminated:
-        #   self.states.append(self.state)
-
+        reward = 0.0
         if not terminated:
-            reward = 0.0
+            
             if self.reward_mode == 0:
                 reward = 1
             if self.reward_mode == 1:
-                if self.state[0] <= 0.3 and self.state[0] >= -0.3:
-                    reward = 2.0
-                else:
-                    reward = 1.0
+                norm_dist_th1 = scipy.stats.norm(loc = 0, scale = 0.3)
+                reward = 0.3 * math.sqrt(2 * np.pi) * norm_dist_th1.pdf(np.pi - self.state[0]) - 0.5
+                # if np.pi - self.state[0] <= 0.3 and self.state[0] <= np.pi + 0.3:
+                #     reward = 2.0
+                # else:
+                #     reward = 1.0
                 
                 if self.state[1] > 10 or self.state[3] > 10:
                     reward -= 1.0
@@ -182,21 +179,28 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
                 norm_dist_x = scipy.stats.norm(loc = 0, scale = 0.5)
                 norm_dist_theta = scipy.stats.norm(loc = 0, scale = 0.1)
                 reward = 0.5 * math.sqrt(2 * 3.14) * norm_dist_x.pdf(self.state[0]) + 0.1 * math.sqrt(2 * 3.14) * norm_dist_theta.pdf(self.state[2])
-        
-        elif self.steps_beyond_terminated is None:
-            # Pole just fell!
-            self.steps_beyond_terminated = 0
-            reward = -5
-        else:
-            if self.steps_beyond_terminated == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned terminated = True. You "
-                    "should always call 'reset()' once you receive 'terminated = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_terminated += 1
-            reward = 0.0
+            if self.reward_mode == 3:
+                reward = -((np.pi - self.state[0])**2) - 0.1 * (np.pi - self.state[2])**2 - 0.001 * torque**2
+                if self.prev_state != None:
+                    reward -= 0.1 * ((self.state[0] - self.prev_state[0]) / self.tau)**2 + 0.01 * ((self.state[2] - self.prev_state[2]) / self.tau)**2
+
+
+        # elif self.steps_beyond_terminated is None:
+        #     # Pole just fell!
+        #     self.steps_beyond_terminated = 0
+        #     reward = 1.0
+        # else:
+        #     if self.steps_beyond_terminated == 0:
+        #         logger.warn(
+        #             "You are calling 'step()' even though this "
+        #             "environment has already returned terminated = True. You "
+        #             "should always call 'reset()' once you receive 'terminated = "
+        #             "True' -- any further steps are undefined behavior."
+        #         )
+        #     self.steps_beyond_terminated += 1
+        #     reward = 0.0
+
+        self.prev_state = self.state
 
         if self.render_mode == "human":
             self.render()
@@ -214,6 +218,7 @@ class DoublePendEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         
         self.state = self.np_random.uniform(low=[np.pi - 0.05, 0, np.pi - 0.05, 0], high=[np.pi + 0.05, 0, np.pi + 0.05, 0], size=(4,))
         self.steps_beyond_terminated = None
+        self.prev_state = None
 
         if self.render_mode == "human":
             self.render()
