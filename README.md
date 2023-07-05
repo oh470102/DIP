@@ -6,4 +6,3 @@ Therefore I had to study another source code (see folder), from which I realized
 The source code utilizes the original SAC structure (the old one with the value function); ny version of implementation rather utilizes the newer SAC structure (omitting the value function).
 
 
-
