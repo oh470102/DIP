@@ -18,6 +18,9 @@ reward_scale = 2
 warmup = 100
 reparam_noise_lim = 1e-6
 epochs = 1000
+showcase = bool(input("showcase? "))
+save_model = bool(input("save? "))
+
 ###
 plt.ion()
 env = gym.make('InvertedDoublePendulum-v4')
@@ -45,3 +48,15 @@ for i in tqdm(range(epochs)):
         state = next_state
     
     scores.append(score)
+
+if showcase: 
+    for i in range(3):
+        state, _ = env.reset()
+        terminated, truncated = False, False
+
+        while not truncated and not terminated:
+            action = agent.choose_action(state, deterministic=True, reparameterize=False)
+            next_state, reward, terminated, truncated, info = env.step(action)
+            state = next_state
+
+if save_model: agent.save()

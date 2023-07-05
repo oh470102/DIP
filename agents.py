@@ -122,3 +122,11 @@ class SACAgent:
         if self.learn_iter % self.update_period == 0:
             self.update_parameters()
         self.learn_iter += 1
+
+    def save(self):
+        import torch
+        torch.save(self.actor.state_dict(), 'actor.pth')
+        torch.save(self.critic_1.state_dict(), 'critic_1.pth')
+        torch.save(self.critic_2.state_dict(), 'critic_2.pth')
+        torch.save(self.value.state_dict(), 'value.pth')
+        torch.save(self.target_value.state_dict(), 'target_value.pth')

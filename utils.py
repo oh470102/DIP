@@ -7,9 +7,11 @@ def resolve_matplotlib_error():
 def live_plot(g1):
 
     resolve_matplotlib_error()
-    plt.grid()
+    
     plt.plot(g1)
+    plt.grid(True)
     plt.draw()
+    plt.gca().grid(True)
     plt.xlabel='episodes'
     plt.ylabel='scores'
     plt.pause(0.001)
