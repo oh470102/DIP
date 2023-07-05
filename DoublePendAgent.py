@@ -1,4 +1,3 @@
-import user_env_gym.double_pendulum as dpend
 from utils import *
 from tqdm import tqdm
 from collections import deque
@@ -14,11 +13,10 @@ resolve_matplotlib_error()
 plt.ion()
 
 ### Train
-#env = dpend.DoublePendEnv(reward_mode=0, render_mode='None')
 env = gym.make('InvertedDoublePendulum-v4')
 agent = SACAgent(env=env)
 
-epochs = 1000#int(input("EPOCHS: "))
+epochs = int(input("EPOCHS: "))
 agent.train(epochs)
 
 plt.ioff()
