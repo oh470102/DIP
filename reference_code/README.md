@@ -1,3 +1,3 @@
 # https://github.com/RoyElkabetz/SAC_with_PyTorch
-This was the code I studied to make mine work.
+This was the code I studied to make mine work (though I've slightly changed it)
 After a long time of revision, finally realized that reparameterization was the "trick"...
