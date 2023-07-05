@@ -22,8 +22,4 @@ def live_plot(g1, g2):
 
     plt.tight_layout()
     plt.draw()
-<<<<<<< HEAD
     plt.pause(0.001)
-=======
-    plt.pause(0.001)
->>>>>>> 7c69418052efd4e9f3d425fc2e1849a240a1a73a
