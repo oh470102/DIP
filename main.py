@@ -19,7 +19,7 @@ warmup = 100
 reparam_noise_lim = 1e-6
 epochs = 1000
 ###
-
+plt.ion()
 env = gym.make('InvertedDoublePendulum-v4')
 agent = SACAgent(gamma=gamma, alpha=alpha, beta=beta, state_dims=env.observation_space.shape, 
               action_dims=env.action_space.shape, max_action=env.action_space.high[0],
@@ -27,22 +27,20 @@ agent = SACAgent(gamma=gamma, alpha=alpha, beta=beta, state_dims=env.observation
               tau=tau, update_period=updated_period, reward_scale=reward_scale, warmup=warmup,
               reparam_noise_lim=reparam_noise_lim)
 
-scores = [0]
-rewards = [0]
+scores = [40]
 
 for i in tqdm(range(epochs)):
     state, _ = env.reset()
     terminated, truncated = False, False
     score = 0
 
-    if i % 50 == 0: live_plot(scores, rewards)
+    if i % 50 == 0: live_plot(scores)
 
     while not truncated and not terminated:
         action = agent.choose_action(state, deterministic=False, reparameterize=False)
         next_state, reward, terminated, truncated, info = env.step(action)
         score += reward
         agent.store_transition(state, action, reward, next_state, truncated or terminated)
-        rewards.append(reward)
         agent.learn()
         state = next_state
     
