@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.distributions as D
 import numpy as np
 from copy import deepcopy
+from tqdm import tqdm
 from utils import ReplayBuffer, live_plot
 
 class SACAgent:
@@ -102,11 +103,11 @@ class SACAgent:
     def train(self, max_episode_num):
         #self.update_target_network()
 
-        for ep in range(max_episode_num):
+        for ep in tqdm(range(max_episode_num)):
             time, episode_reward, truncated, terminated = 0, 0, False, False
             state, _ = self.env.reset()
 
-            if ep % 10 == 0: 
+            if ep % 5 == 0: 
                 live_plot(self.save_epi_reward)
 
             while not truncated and not terminated and time < 500:
@@ -142,7 +143,8 @@ class SACAgent:
                 time += 1
 
             self.save_epi_reward.append(episode_reward)
-            print(episode_reward)
+            
+        return self.save_epi_reward
 
 class Actor(nn.Module):
 
@@ -196,7 +198,7 @@ class Critic(nn.Module):
         self.v1 = nn.Linear(self.state_dim, 128)
         self.a1 = nn.Linear(self.action_dim, 128)
 
-        self.l2 = nn.Linear(128, 128) # 64 = size(v1)[0] + size(a1)[]
+        self.l2 = nn.Linear(256, 128) # NOTE: 256 = v1.size + a1.size
         self.l3 = nn.Linear(128, 64)
         self.q =  nn.Linear(64, 1)
 

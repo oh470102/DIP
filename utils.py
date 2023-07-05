@@ -1,4 +1,3 @@
-import user_env_gym.double_pendulum as dpend
 import torch
 import random
 from collections import deque
@@ -11,33 +10,49 @@ def resolve_matplotlib_error():
     import os
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-def test_env():
-    env = dpend.DoublePendEnv(render_mode="human", reward_mode=1)
+def showcase(actor):
+    import gym
+    env = gym.make('InvertedDoublePendulum-v4', render_mode='human')
 
-    n_episodes = 1
+    n_episodes = 3
     for episode in range(n_episodes):
         state, _ = env.reset()
 
         terminated = False
         truncated = False
-        action = env.action_space.sample()
 
         while not terminated and not truncated:
             state = torch.tensor(state, dtype=torch.float32)
+            action = actor.get_action(state)
+            action = np.clip(action, -actor.action_bound, actor.action_bound)
+            action = np.array(action).reshape(-1)
             state, reward, terminated, truncated, _ = env.step(action)
-            print(reward)
-            
             
     env.close() 
 
-def live_plot(scores):
-    plt.clf
-    plt.plot(scores)
-    plt.xlabel('epochs')
-    plt.ylabel('scores')
+def final_plot(g1):
+    import numpy as np
+    resolve_matplotlib_error()
+    plt.ioff()
+
+    window_size = 5
+    moving_average = np.convolve(g1, np.ones(window_size) / window_size, mode='valid')
+
+    plt.plot(moving_average, label='mAverage',color='red', linewidth=2.5)
+    plt.legend()
     plt.draw()
-    plt.pause(0.001)
+    plt.show()
+
+def live_plot(scores):
     
+    plt.plot(scores)
+    plt.grid(True)
+    plt.draw()
+    plt.gca().grid(True)
+    plt.xlabel('episodes')
+    plt.ylabel('scores')
+    plt.pause(0.001)
+
 class ReplayBuffer:
     def __init__(self, buffer_size):
         self.buffer_size = buffer_size
