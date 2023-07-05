@@ -1,2 +1,3 @@
-# DIP
-Solving DIP(Double Inverted Pendulum) from OpenAI mujoco with RL
+# https://github.com/RoyElkabetz/SAC_with_PyTorch
+This was the code I studied to make mine work.
+After a long time of revision, finally realized that reparameterization was the "trick"...
