@@ -3,6 +3,7 @@ import numpy as np
 from agents import SACAgent
 from utils import *
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 ### HYPERPARAMS
 gamma = 0.99
@@ -17,9 +18,9 @@ updated_period = 2
 reward_scale = 2
 warmup = 100
 reparam_noise_lim = 1e-6
-epochs = 1000
-showcase = bool(input("showcase? "))
-save_model = bool(input("save? "))
+epochs = int(input("EPOCHS:"))
+showcase = True
+save_model = False
 
 ###
 plt.ion()
@@ -49,7 +50,11 @@ for i in tqdm(range(epochs)):
     
     scores.append(score)
 
+resolve_matplotlib_error()
+final_plot(scores)
+
 if showcase: 
+    env = gym.make('InvertedDoublePendulum-v4', render_mode='human')
     for i in range(3):
         state, _ = env.reset()
         terminated, truncated = False, False
