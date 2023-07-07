@@ -1,6 +1,6 @@
 ## Various Pendulum Tasks
 Here, various environments that deal with stabilizing or swinging-up pendulum(s) are solved with **RL** (Reinforcement Learning) approaches. Each folders
-contain different *README.md* files, which you can read to find more about that subtask. 
+contain different *README.md* files, which you can read to find more about each subtask.
 
 ## Environments solved
 Task | Env | Algorithm
