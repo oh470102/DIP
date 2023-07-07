@@ -8,11 +8,11 @@ Task | Env | Algorithm
 Single Pendulum Stabilization  | Cartpole-v1 | DDPG
 Single Pendulum Swing-Up  | Pendulum-v1 | DDPG
 Double Pendulum Swing-Up | Acrobot-v1 | SAC
-Double Pendulum Stabilization | custom env | SAC
+Double Pendulum Stabilization* | custom env | SAC
 Double Pendulum Swing-Up & Stab.| custom env | SAC
 
-*The first three environments are from the gym pacakge. They are all under the folder Practice_with_gym.*
-*The double pendulum stabilization implementation was also succesfully tested on the mujoco environment!*
+Note: The first three environments are from the gym pacakge. They are all under the folder Practice_with_gym.
+*The double pendulum stabilization implementation was also succesfully tested on the mujoco environment!
 
 ## Algorithm Used
 * __DDPG__
