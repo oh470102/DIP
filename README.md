@@ -19,6 +19,13 @@ Note: The first three environments are from the gym pacakge. They are all under 
 * __DDPG__
 * __SAC__ (seems way better, at least for pendulum-related tasks)
 
+## Reference & Remarks
+* [Pytorch Implementation of SAC](https://github.com/RoyElkabetz/SAC_with_PyTorch)
+  * This one shows how to implement the older version of *SAC* with *PyTorch*. A value network is included in the network structure, which can still be used,
+  but seems like you can get rid of it. From this code, I realized that using .rsample() and .sample() in the right places is something that one should be mindful of when implementing SAC.
+* Book: 수학으로 풀어보는 강화학습 원리와 알리즘 - 박성수 지음 [Personal Blog Link](https://pasus.tistory.com/)
+  * Also referred to this book to study how *SAC* and *DDPG* works! The example code was in tensorflow2, so had to tweak a lot of things myself. Also, the example code (which was for pendulum-v1) could not solve more complex environments, so had to figure out what the problem was. Some hyperparameter tuning, and the reparameterization trick (see above) was the deal.
+
 ## NOTE
 This repository was created just for myself to study reinforcement learning algorithms. No any other purposes, and I looked up many other open-source codes.
 See the reference section above (or my code) if you also need some help implementing!
